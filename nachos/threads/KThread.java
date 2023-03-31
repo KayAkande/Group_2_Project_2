@@ -272,13 +272,21 @@ public class KThread {
      * call is not guaranteed to return. This thread must not be the current
      * thread.
      */
-    public void join() {
-	Lib.debug(dbgThread, "Joining to thread: " + toString());
+public void join() {     
+    Lib.debug(dbgThread, "Joining to thread: " + toString());
+    
+    Lib.assertTrue(this != currentThread);
+   boolean currentStatus = Machine.interrupt().disable();        
+if (status != statusFinished) {   
+    if (joinQueue == null){  
+        joinQueue = ThreadedKernel.scheduler.newThreadQueue(true); 
+        joinQueue.acquire(this); }              
+    
+        joinQueue.waitForAccess(currentThread);     
+      currentThread.sleep();   }        
+    Machine.interrupt().restore(currentStatus);
 
-	Lib.assertTrue(this != currentThread);
-
-    }
-
+}
     /**
      * Create the idle thread. Whenever there are no threads ready to be run,
      * and <tt>runNextThread()</tt> is called, it will run the idle thread. The
@@ -444,4 +452,5 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    private static ThreadQueue joinQueue = null;
 }

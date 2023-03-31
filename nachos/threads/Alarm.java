@@ -1,6 +1,8 @@
 package nachos.threads;
 
 import nachos.machine.*;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
@@ -15,10 +17,13 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
-	Machine.timer().setInterruptHandler(new Runnable() {
+        Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
-	    });
+        });
     }
+    
+    // A queue thread data structure.
+    private PriorityQueue<SleepyThread> sleepingQueue = new PriorityQueue<>(new SleepyThread.Comp());
 
     /**
      * The timer interrupt handler. This is called by the machine's timer
@@ -27,9 +32,20 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+        System.out.println("Alarm class: starting timerInterrupt() method.");
+        while (!sleepingQueue.isEmpty()) {
+            System.out.println("Alarm class: timerInterrupt() while-loop iteration.");
+            SleepyThread sleepyThread = sleepingQueue.peek();
+            if (sleepyThread.priority <= Machine.timer().getTime()) {
+                sleepingQueue.poll();
+                sleepyThread.thread.ready();
+            } else
+                break;
+        }
+        Machine.interrupt().restore(Machine.interrupt().disable());
+        KThread.currentThread().yield();
     }
-
+    
     /**
      * Put the current thread to sleep for at least <i>x</i> ticks,
      * waking it up in the timer interrupt handler. The thread must be
@@ -46,8 +62,37 @@ public class Alarm {
      */
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
+        System.out.println("Alarm class: starting waitUntil(long x) method.");
+        KThread curr = KThread.currentThread();
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+        SleepyThread sleepyThread = new SleepyThread(curr, wakeTime);
+        sleepingQueue.add(sleepyThread);
+        curr.sleep();
+        
+        Machine.interrupt().restore(Machine.interrupt().disable());
+        timerInterrupt();
+    }
+    
+}
+
+//New class to be implemented according to the design and the clues given.
+class SleepyThread {
+    
+    public KThread thread;
+    public long priority;
+    
+    public SleepyThread(KThread thread, long time) {
+        this.thread = thread;
+        this.priority = time;
+    }
+    
+    public static class Comp implements Comparator<SleepyThread> {
+        public int compare(SleepyThread a, SleepyThread b) {
+            if (a.priority > b.priority)
+                return 1;
+            else if (a.priority < b.priority)
+                return -1;
+            return 0;
+        }
     }
 }
