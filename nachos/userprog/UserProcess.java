@@ -3,7 +3,7 @@ package nachos.userprog;
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
-
+import java.util.LinkedList;
 import java.io.EOFException;
 
 /**
@@ -424,6 +424,108 @@ public class UserProcess {
      * @param	a3	the fourth syscall argument.
      * @return	the value to be returned to the user.
      */
+    
+     private int handleExit(int status) {
+        int ret = -1;
+         exitCode = status;
+        unloadSections();
+
+        UserProcess.runningProcesses--;
+        if (UserProcess.runningProcesses == 0) {
+            Kernel.kernel.terminate();
+        } else {
+            UThread.finish();
+        }
+
+        ret = 0;
+
+        return ret;
+    }
+                                                                     
+
+    private int handleJoin(int pid, int retStatusAddr) {
+        int ret = -1;
+
+        if (retStatusAddr < 0 || retStatusAddr / pageSize >= numPages)
+            return ret;
+        else if (pageTable.length <= (retStatusAddr / pageSize)) {
+            return ret;
+        }
+
+        UserProcess childProcess = null;
+        for (UserProcess child : children) {
+            if (child.processId == pid) {
+                childProcess = child;
+                break;
+            }
+        }
+
+        if (!(childProcess != null && !childProcess.joint)) {
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+
+        childProcess.joint = true;
+        childProcess.mainThread.join();
+
+        byte[] exitBytes = Lib.bytesFromInt(childProcess.exitCode);
+        if (writeVirtualMemory(retStatusAddr, exitBytes) != 4) {
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+
+        return -1;
+    }
+    
+    private int handleExec(int nameAddr, int argc, int argvAddr) {
+        int ret = -1;
+
+        if (nameAddr < 0 || nameAddr / pageSize >= numPages)
+            return ret;
+        else if (pageTable.length <= (nameAddr / pageSize)) {
+            return ret;
+        }
+
+        if (argvAddr < 0 || argvAddr / pageSize >= numPages)
+            return ret;
+        else if (pageTable.length <= (argvAddr / pageSize)) {
+            return ret;
+        }
+
+        if (!(0 <= argc && argc < 256))
+            return ret;
+
+        String filename = readVirtualMemoryString(nameAddr, 256);
+        String[] argv = new String[argc];
+
+        for (int i = 0; i < argc; ++i) {
+            byte[] curArg = new byte[4];
+            if (!(readVirtualMemory(argvAddr + i * 4, curArg) == 4))
+                return ret;
+
+            int argAddress = Lib.bytesToInt(curArg, 0);
+
+            if (argAddress < 0 || argAddress / pageSize >= numPages)
+                return ret;
+            else if (pageTable.length <= (argAddress / pageSize)) {
+                return ret;
+            }
+            argv[i] = readVirtualMemoryString(argAddress, 256);
+        }
+
+        UserProcess child = new UserProcess();
+        children.add(child);
+
+        if (!child.execute(filename, argv))
+            ret = -1;
+        else
+            ret = child.processId;
+
+        return ret;
+    }
+
     public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 	switch (syscall) {
 	case syscallHalt:
@@ -466,27 +568,6 @@ public class UserProcess {
 	    Lib.assertNotReached("Unexpected exception");
 	}
     }
-    
-    
-    /** The program being run by this process. */
-    protected Coff coff;
-
-    /** This process's page table. */
-    protected TranslationEntry[] pageTable;
-    /** The number of contiguous pages occupied by the program. */
-    protected int numPages;
-
-    /** The number of pages in the program's stack. */
-    protected final int stackPages = 8;
-    
-    private int initialPC, initialSP;
-    private int argc, argv;
-	
-    private static final int pageSize = Processor.pageSize;
-    private static final char dbgProcess = 'a';
-    
-    // CODE ADDED:
-    // CODE ADDED:
     
     private int handleOpen(int file) {
         
@@ -757,4 +838,29 @@ public class UserProcess {
         }
         return -1;
     }
+    
+    /** The program being run by this process. */
+    protected Coff coff;
+
+    /** This process's page table. */
+    protected TranslationEntry[] pageTable;
+    /** The number of contiguous pages occupied by the program. */
+    protected int numPages;
+
+    /** The number of pages in the program's stack. */
+    protected final int stackPages = 8;
+    
+    private int initialPC, initialSP;
+    private int argc, argv;
+	
+    private static final int pageSize = Processor.pageSize;
+    private static final char dbgProcess = 'a';
+    
+    private int exitCode = 0;
+    private static int runningProcesses = 0;
+    private final int processId = 0;
+    private static final int numProcesses = 0;
+    public boolean joint = false;
+    private LinkedList<UserProcess> children = new LinkedList<>();
+    private UThread mainThread = null;
 }
