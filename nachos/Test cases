@@ -1,0 +1,86 @@
+Here is a sample output from our test cases when implementing the program:
+
+"nachos 5.0j initializing... config interrupt timer user-check grader
+*** thread 0 looped 0 times
+*** thread 1 looped 0 times
+*** thread 0 looped 1 times
+*** thread 1 looped 1 times
+*** thread 0 looped 2 times
+*** thread 1 looped 2 times
+*** thread 0 looped 3 times
+*** thread 1 looped 3 times
+*** thread 0 looped 4 times
+*** thread 1 looped 4 times
+Alarm class: starting timerInterrupt() method.
+Alarm class: starting timerInterrupt() method.
+Alarm class: starting timerInterrupt() method.
+Alarm class: starting timerInterrupt() method.
+Machine halting!
+
+Ticks: total 2130, kernel 2130, user 0
+Disk I/O: reads 0, writes 0
+Console I/O: reads 0, writes 0
+Paging: page faults 0, TLB misses 0
+Network I/O: received 0, sent 0
+BUILD SUCCESSFUL (total time: 1 second)"
+
+
+
+Others: 
+
+Task 1:
+The UserProceses class includes test cases that print output if they fail (return -1), to help identify the cause of the failure. The tests cover system calls 
+for creating, opening, reading, writing, and deleting files. If a test fails, it may indicate that the file being accessed does not exist. Additionally,
+each method includes specific test cases to identify issues related to reading, writing, opening, creating, closing, and deleting files. For example, a
+test may fail if the number of lines read is not equal to the number of lines written.
+
+
+
+
+
+
+Task 2:
+For this will test it by:
+
+• Loading programs into memory:
+We will load a program that takes up all available memory and verify that it runs correctly.
+Load multiple programs that use different parts of the memory and verify that they run correctly.
+
+• Try and fill memory and load another process:
+We will load  a program that fills up the entire memory and try to load another program. Verify that the second program fails to load and an appropriate error message is displayed.
+
+•Load multiple programs into one process and see if the memory fails:
+Load multiple programs into one process and verify that they all run correctly without memory issues.
+
+• Close programs and make sure memory is freed:
+We will load a program and close it, then verify that the memory used by the program is freed.
+
+• Open 2 processes and try to read and write to each other's memory:
+We will open 2 processes that communicate with each other through shared memory and verify that they can successfully read and write to each other's memory.
+
+
+• Page table which should not work:
+Attempt to modify the page table of another process and verify that it fails and an appropriate error message is displayed.
+
+
+
+
+Task 3:
+
+Tests for exec syscalls (exec, join, exit) :
+
+testID 0 : tests that your syscall exit finishes the thread of the process immediately
+testID 1 : runs exec multiple times and checks each child gets unique PID
+testID 2 : tests your syscall join to a child
+testID 3 : tests exec with error arguments (e.g. bad file name)
+testID 4 : tests your syscall join to a non-child
+testID 5 : tests your syscall join to a child that caused unhandled exception
+testID 6 : tests that your exit syscall releases all resources
+testID 7 : tests that you support fragmentation in physical memory.
+(e.g. if physical memory is 10 pages, exec P1 4 pages big, exec P2 1 page big, exec P3 4 pages big, P2 exits.   then exec P4 2 pages big should succeed)
+testID 8 : tests readVirtualMemory with an invalid range
+testID 9 : tests writeVirtualMemory with an invalid range
+testID 10 : tests readVirtualMemory small valid range, make sure read right data
+testID 11 : tests writeVirtualMemory small valid range, make sure wrote right data
+testID 12 : tests readVirtualMemory with a large valid range, make sure read right data
+testID 13 : tests writeVirtualMemory with a large valid range, make sure wrote right data
