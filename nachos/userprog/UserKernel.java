@@ -3,6 +3,8 @@ package nachos.userprog;
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
+import java.util.Collections;
+import java.util.LinkedList;
 
 /**
  * A kernel that can support multiple user processes.
@@ -14,13 +16,21 @@ public class UserKernel extends ThreadedKernel {
     public UserKernel() {
 	super();
     }
-
+    
     /**
      * Initialize this kernel. Creates a synchronized console and sets the
      * processor's exception handler.
      */
     public void initialize(String[] args) {
 	super.initialize(args);
+        
+        // Initialize LinkedList to store free physical pages
+        freePages = new LinkedList<TranslationEntry>(); 
+        
+        // Iterate over all physical pages and add them to the list
+        for (int i = 0; i < Machine.processor().getNumPhysPages(); i++) {
+            freePages.add(new TranslationEntry(i, 0, true, false, false, false));
+        }
 
 	console = new SynchConsole(Machine.console());
 	
@@ -112,4 +122,25 @@ public class UserKernel extends ThreadedKernel {
 
     // dummy variables to make javac smarter
     private static Coff dummy1 = null;
+    
+    // static LinkedList to store free physical pages
+    private static LinkedList<TranslationEntry> freePages;
+
+    // synchronize 
+    public static synchronized LinkedList<TranslationEntry> getFreePages() {
+        return freePages;    
+    }
+    // synchronize 
+    public static synchronized void addFreePage(TranslationEntry entry) {
+        freePages.add(entry);
+    }
+    // synchronize
+    public static synchronized TranslationEntry removeFreePage() {
+        if (freePages.isEmpty()) {
+            return null;
+        } else {
+            return freePages.removeFirst();
+        }
+    }
+
 }
